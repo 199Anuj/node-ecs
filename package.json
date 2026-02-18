@@ -1,0 +1,19 @@
+{
+  "name": "nodejs-ecs",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+  "start": "node app.js",
+  "lint": "eslint .",
+  "test": "echo \"No tests yet\" && exit 0",
+  "build": "echo \"Nothing to build\""
+},
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "description": "",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}
