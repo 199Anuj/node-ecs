@@ -8,11 +8,51 @@ on:
 
         
 jobs:
-    deploy:
+    codeql-analysis:
+        name: CodeQL Analysis
+        runs-on: ubuntu-latest
+        permissions:
+          security-events: write
+          contents: read
+    
+        steps:
+          - uses: actions/checkout@v4
+
+          - name: initlization code-ql
+            run: echo "CodeQL Analysis for Node JS Project"
+    
+          - name: Initialize CodeQL
+            uses: github/codeql-action/init@v2
+            with:
+              languages: javascript
+    
+          - name: Autobuild
+            uses: github/codeql-action/autobuild@v2
+    
+          - name: Perform CodeQL Analysis
+            uses: github/codeql-action/analyze@v2
+
+    build-and-linting:
+        name: Build and Linting
         runs-on: ubuntu-latest
 
         steps:
-            - name: print hello
-              run: echo "Hello World"
+            - name : Initialize Build and Linting
+              run: echo "Build and Linting for Node JS Project"
+
+            - name : Checkout code
+              uses: actions/checkout@v4
+
+            - name : Setup Node JS
+              uses: actions/setup-node@v3
+              with:
+                node-version: '20'
+
+            - name : Install dependencies
+              run: npm install
+
+            - name : Run Linting
+              run: npm run lint 
+
 
 
