@@ -9,7 +9,10 @@ on:
 env:
     AWS_REGION: us-east-1
     ECR_REPOSITORY: node/nodejs-es
-
+    ECS_CLUSTER: nodejs-ecs-cluster
+    ECS_SERVICE: nodejs-ecs-task-defination-service
+    ECS_CONTAINER_NAME: nodejs-ecs-container
+    ECS_TASK_DEFINITION: nodejs-ecs-task-defination
         
 jobs:
     codeql-analysis:
@@ -99,3 +102,46 @@ jobs:
                 docker build -t $ECR_REPOSITORY:$IMAGE_TAG .
                 docker tag $ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
                 docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+            - name: Download current task definition
+              run: |
+                aws ecs describe-task-definition \
+                  --task-definition $ECS_TASK_DEFINITION \
+                  --query taskDefinition > task-definition.json
+
+            - name: Update task definition with new image
+              run: |
+                IMAGE_URI=$ECR_REGISTRY/$ECR_REPOSITORY:${{ steps.image-tag.outputs.tag }}
+            
+                jq --arg IMAGE "$IMAGE_URI" \
+                  '.containerDefinitions[0].image = $IMAGE
+                  | del(.taskDefinitionArn)
+                  | del(.revision)
+                  | del(.status)
+                  | del(.requiresAttributes)
+                  | del(.compatibilities)
+                  | del(.registeredAt)
+                  | del(.registeredBy)' \
+                  task-definition.json > new-task-def.json
+
+
+            - name: Register new task definition
+              run: |
+                aws ecs register-task-definition \
+                  --cli-input-json file://new-task-def.json
+
+
+            - name: Update ECS service
+              run: |
+                aws ecs update-service \
+                  --cluster $ECS_CLUSTER \
+                  --service $ECS_SERVICE \
+                  --task-definition $TASK_DEFINITION \
+                  --force-new-deployment
+            
+
+            - name: Wait for service stability
+              run: |
+                aws ecs wait services-stable \
+                  --cluster $ECS_CLUSTER \
+                  --services $ECS_SERVICE
